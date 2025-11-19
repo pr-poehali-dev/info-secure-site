@@ -8,15 +8,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
 
-interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  unlocked: boolean;
-  points: number;
-}
-
 interface Article {
   id: string;
   title: string;
@@ -43,20 +34,10 @@ interface Test {
 }
 
 const Index = () => {
-  const [totalPoints, setTotalPoints] = useState(150);
   const [currentTest, setCurrentTest] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [testScore, setTestScore] = useState(0);
-
-  const [achievements, setAchievements] = useState<Achievement[]>([
-    { id: '1', title: 'Первые шаги', description: 'Прочитана первая статья', icon: 'BookOpen', unlocked: true, points: 10 },
-    { id: '2', title: 'Знаток паролей', description: 'Пройден тест по паролям', icon: 'Key', unlocked: true, points: 25 },
-    { id: '3', title: 'Защитник данных', description: 'Изучены все статьи', icon: 'Shield', unlocked: false, points: 50 },
-    { id: '4', title: 'Мастер безопасности', description: 'Все тесты пройдены на 90%+', icon: 'Trophy', unlocked: false, points: 100 },
-    { id: '5', title: 'Анти-фишер', description: 'Пройден тест по фишингу', icon: 'AlertTriangle', unlocked: true, points: 30 },
-    { id: '6', title: 'Эксперт', description: 'Набрано 500 баллов', icon: 'Star', unlocked: false, points: 200 },
-  ]);
 
   const [articles] = useState<Article[]>([
     {
@@ -220,11 +201,9 @@ const Index = () => {
     const question = test.questions[currentQuestion];
     if (selectedAnswer === question.correctAnswer) {
       setTestScore(testScore + 1);
-      toast.success('Правильно! 🎉', {
-        description: `+${20} баллов`
-      });
+      toast.success('Правильно!');
     } else {
-      toast.error('Неверно 😔', {
+      toast.error('Неверно', {
         description: 'Попробуйте ещё раз!'
       });
     }
@@ -234,7 +213,6 @@ const Index = () => {
       setSelectedAnswer(null);
     } else {
       const finalScore = Math.round((testScore + (selectedAnswer === question.correctAnswer ? 1 : 0)) / test.questions.length * 100);
-      const pointsEarned = Math.round(finalScore / 2);
       
       setTests(tests.map(t => 
         t.id === currentTest 
@@ -242,17 +220,8 @@ const Index = () => {
           : t
       ));
 
-      setTotalPoints(totalPoints + pointsEarned);
-
-      if (finalScore >= 90) {
-        const newAchievements = achievements.map(a => 
-          a.id === '4' ? { ...a, unlocked: true } : a
-        );
-        setAchievements(newAchievements);
-      }
-
       toast.success(`Тест завершён! Результат: ${finalScore}%`, {
-        description: `Вы заработали ${pointsEarned} баллов!`
+        description: `Правильных ответов: ${testScore + (selectedAnswer === question.correctAnswer ? 1 : 0)} из ${test.questions.length}`
       });
 
       setCurrentTest(null);
@@ -261,9 +230,9 @@ const Index = () => {
     }
   };
 
-  const totalAchievements = achievements.length;
-  const unlockedAchievements = achievements.filter(a => a.unlocked).length;
-  const progressPercent = Math.round((unlockedAchievements / totalAchievements) * 100);
+  const completedTests = tests.filter(t => t.completed).length;
+  const totalTests = tests.length;
+  const progressPercent = totalTests > 0 ? Math.round((completedTests / totalTests) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -281,12 +250,7 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">Обучающий портал</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <Badge variant="secondary" className="px-4 py-2 text-lg font-semibold">
-                <Icon name="Coins" size={18} className="mr-2" />
-                {totalPoints} баллов
-              </Badge>
-            </div>
+
           </div>
         </div>
       </header>
@@ -296,31 +260,47 @@ const Index = () => {
           <Card className="border-2 border-primary/20 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-2xl">
-                <Icon name="Award" className="text-secondary" />
-                Ваш прогресс
+                <Icon name="GraduationCap" className="text-secondary" />
+                Ваш прогресс обучения
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">Достижения: {unlockedAchievements} из {totalAchievements}</span>
+                    <span className="text-sm font-medium">Пройдено тестов: {completedTests} из {totalTests}</span>
                     <span className="text-sm font-bold text-primary">{progressPercent}%</span>
                   </div>
                   <Progress value={progressPercent} className="h-3" />
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
-                  {achievements.filter(a => a.unlocked).slice(0, 3).map((achievement) => (
-                    <div key={achievement.id} className="flex items-center gap-2 p-3 bg-gradient-to-br from-accent/10 to-accent/5 rounded-lg border border-accent/20 animate-scale-in">
-                      <div className="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center">
-                        <Icon name={achievement.icon as any} size={20} className="text-accent" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm">{achievement.title}</p>
-                        <p className="text-xs text-muted-foreground">+{achievement.points}</p>
-                      </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                  <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+                    <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
+                      <Icon name="BookOpen" size={24} className="text-primary" />
                     </div>
-                  ))}
+                    <div>
+                      <p className="font-semibold">Статьи</p>
+                      <p className="text-sm text-muted-foreground">{articles.length} материалов</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-lg border border-secondary/20">
+                    <div className="w-12 h-12 bg-secondary/20 rounded-lg flex items-center justify-center">
+                      <Icon name="FileQuestion" size={24} className="text-secondary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Тесты</p>
+                      <p className="text-sm text-muted-foreground">{completedTests}/{totalTests} пройдено</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-accent/10 to-accent/5 rounded-lg border border-accent/20">
+                    <div className="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center">
+                      <Icon name="Book" size={24} className="text-accent" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Глоссарий</p>
+                      <p className="text-sm text-muted-foreground">{glossary.length} терминов</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -328,7 +308,7 @@ const Index = () => {
         </div>
 
         <Tabs defaultValue="articles" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-3 h-auto p-1">
             <TabsTrigger value="articles" className="flex items-center gap-2 py-3">
               <Icon name="BookOpen" size={18} />
               <span className="hidden sm:inline">Статьи</span>
@@ -340,10 +320,6 @@ const Index = () => {
             <TabsTrigger value="glossary" className="flex items-center gap-2 py-3">
               <Icon name="Book" size={18} />
               <span className="hidden sm:inline">Глоссарий</span>
-            </TabsTrigger>
-            <TabsTrigger value="achievements" className="flex items-center gap-2 py-3">
-              <Icon name="Trophy" size={18} />
-              <span className="hidden sm:inline">Награды</span>
             </TabsTrigger>
           </TabsList>
 
@@ -479,60 +455,6 @@ const Index = () => {
                     <div key={index} className="p-4 bg-muted/30 rounded-lg border border-muted animate-slide-up" style={{ animationDelay: `${index * 0.05}s` }}>
                       <h4 className="font-semibold text-lg text-primary mb-2">{item.term}</h4>
                       <p className="text-muted-foreground leading-relaxed">{item.definition}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="achievements" className="animate-fade-in">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Icon name="Medal" className="text-secondary" />
-                  Достижения
-                </CardTitle>
-                <CardDescription>
-                  Открыто {unlockedAchievements} из {totalAchievements} достижений
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-4">
-                  {achievements.map((achievement, index) => (
-                    <div
-                      key={achievement.id}
-                      className={`p-6 rounded-xl border-2 transition-all animate-scale-in ${
-                        achievement.unlocked
-                          ? 'bg-gradient-to-br from-accent/10 to-accent/5 border-accent/30 shadow-md'
-                          : 'bg-muted/20 border-muted opacity-60'
-                      }`}
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${
-                          achievement.unlocked 
-                            ? 'bg-gradient-to-br from-accent to-accent/70 shadow-lg' 
-                            : 'bg-muted'
-                        }`}>
-                          <Icon 
-                            name={achievement.icon as any} 
-                            size={32} 
-                            className={achievement.unlocked ? 'text-white' : 'text-muted-foreground'}
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-bold text-lg mb-1">{achievement.title}</h4>
-                          <p className="text-sm text-muted-foreground mb-2">{achievement.description}</p>
-                          <Badge variant={achievement.unlocked ? "default" : "outline"} className={achievement.unlocked ? "bg-accent" : ""}>
-                            <Icon name="Coins" size={14} className="mr-1" />
-                            {achievement.points} баллов
-                          </Badge>
-                        </div>
-                        {achievement.unlocked && (
-                          <Icon name="CheckCircle2" size={24} className="text-accent flex-shrink-0 animate-bounce-subtle" />
-                        )}
-                      </div>
                     </div>
                   ))}
                 </div>
